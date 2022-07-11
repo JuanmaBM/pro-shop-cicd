@@ -1,0 +1,44 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: trigger-template-product-api-pipeline
+spec:
+  params:
+  - name: git-revision
+  - name: git-commit-message
+  - name: git-repo-url
+  - name: git-repo-name
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1beta1
+    kind: PipelineRun
+    metadata:
+      annotations:
+        pipeline.openshift.io/started-by: kubeadmin
+      generateName: product-api-pipeline-
+      labels:
+        tekton.dev/pipeline: product-api-pipeline
+      namespace: pro-shop
+    spec:
+      params:
+      - name: url
+        value: https://github.com/JuanmaBM/product-api
+      - name: branch
+        value: main
+      - name: image-name
+        value: product-api
+      - name: image-url
+        value: quay.io/jbarea/product-api
+      - name: image-tag
+        value: latest
+      - name: deployment-name
+        value: product-api
+      pipelineRef:
+        name: quarkus-ci
+      resources: []
+      status: null
+      workspaces:
+      - name: source
+        persistentVolumeClaim:
+          claimName: source-workspace
+      - emptyDir: {}
+        name: scratch

@@ -1,0 +1,102 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: quarkus-ci
+spec:
+  workspaces:
+    - name: source
+    - name: scratch
+  params:
+    - name: url
+      description: Git repository url
+    - name: branch
+      description: Revision to use
+    - name: image-name
+      description: Image name
+    - name: image-url
+      description: Container image URL to publish
+    - name: image-tag
+      default: latest
+      description: Container image tag to publish
+    - name: deployment-name
+      description: Deployment name
+  tasks:
+  - name: checkout
+    taskRef:
+      name: git-clone
+      kind: ClusterTask
+    params:
+      - name: url
+        value: $(params.url)
+      - name: revision
+        value: $(params.branch)
+      - name: deleteExisting
+        value: 'true'
+    workspaces:
+      - name: output
+        workspace: source
+
+  - name: test
+    taskRef:
+      name: maven
+      kind: ClusterTask
+    runAfter:
+      - checkout
+    params:
+      - name: MAVEN_IMAGE
+        value: 'maven:3-openjdk-11'
+      - name: GOALS
+        value: ['clean', 'verify']
+    workspaces:
+      - name: source
+        workspace: source
+      - name: maven-settings
+        workspace: scratch
+
+  - name: maven-build
+    taskRef:
+      name: maven
+      kind: ClusterTask
+    runAfter:
+      - checkout
+    params:
+      - name: MAVEN_IMAGE
+        value: 'maven:3-openjdk-11'
+      - name: GOALS
+        value: ['clean', 'package', '-DskipTests']
+    workspaces:
+      - name: source
+        workspace: source
+      - name: maven-settings
+        workspace: scratch
+  
+  - name: build
+    taskRef:
+      name: buildah
+      kind: ClusterTask
+    runAfter: 
+      - test
+      - maven-build
+    workspaces:
+      - name: source
+        workspace: source
+    params:
+      - name: DOCKERFILE
+        value: ./src/main/docker/Dockerfile.jvm
+      - name: IMAGE
+        value: $(params.image-url):$(params.image-tag)
+      - name: CONTEXT
+        value: .
+      - name: TLSVERIFY
+        value: 'false'
+
+  - name: deploy
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    runAfter:
+      - build
+    params:
+      - name: SCRIPT
+        value: |
+          oc rollout restart deployment/$(params.deployment-name)

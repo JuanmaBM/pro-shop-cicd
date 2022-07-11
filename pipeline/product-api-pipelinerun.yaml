@@ -1,0 +1,29 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: product-api-pipelinerun-initial
+  labels:
+    tekton.dev/pipeline: quarkus-ci
+spec:
+  params:
+    - name: url
+      value: 'https://github.com/JuanmaBM/product-api'
+    - name: branch
+      value: main
+    - name: image-name
+      value: product-api
+    - name: image-url
+      value: quay.io/jbarea/product-api
+    - name: image-tag
+      value: latest
+    - name: deployment-name
+      value: product-api
+  pipelineRef:
+    name: quarkus-ci
+  serviceAccountName: pipeline
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: source-workspace
+    - emptyDir: {}
+      name: scratch
