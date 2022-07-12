@@ -1,0 +1,18 @@
+﻿apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pro-shop-main
+  namespace: pro-shop
+spec:
+  destination:
+    namespace: pro-shop
+    server: 'https://kubernetes.default.svc'
+  project: default
+  source:
+    path: base
+    repoURL: 'https://github.com/JuanmaBM/product-api-k8s.git'
+    targetRevision: main
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
