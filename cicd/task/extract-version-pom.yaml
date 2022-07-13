@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: extract-version-pom
+spec:
+  results:
+    - name: app-version
+      description: The current app version
+  params:
+    - name: working-dir
+      description: working dir
+  workspaces:
+    - name: source
+  steps:
+   - name: get-version
+     image: gcr.io/cloud-builders/mvn
+     script: |
+      cd $(workspaces.source.path)
+      mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tee $(results.app-version.path)

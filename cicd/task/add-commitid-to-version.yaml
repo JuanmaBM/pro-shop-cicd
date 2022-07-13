@@ -1,0 +1,24 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: add-commitid-to-version
+spec:
+  results:
+    - name: final-version
+      description: The version with commitid append
+  params:
+    - name: working-dir
+      description: working dir
+    - name: app-version
+      description: The current app version
+  workspaces:
+    - name: source
+  steps:
+    - name: add-commit-id
+      image: bash:latest
+      script: |
+        cd $(workspaces.source.path)
+        commit_id=$(git rev-parse HEAD)
+        commit_id_short=${commit_id:0:6}
+
+        echo "${app-version}-${commit_id_short}" | tee ${results.final-version.path}

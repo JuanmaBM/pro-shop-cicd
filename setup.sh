@@ -41,6 +41,7 @@ oc new-project pro-shop
 print_separator
 echo -e "Installing workshop cicd resources\n"
 oc apply -k cicd/workspace
+oc apply -k cicd/task
 oc apply -k cicd/pipeline
 sleep 5;
 oc apply -k cicd/trigger

@@ -15,11 +15,6 @@ spec:
       description: Image name
     - name: image-url
       description: Container image URL to publish
-    - name: image-tag
-      default: latest
-      description: Container image tag to publish
-    - name: deployment-name
-      description: Deployment name
   tasks:
   - name: checkout
     taskRef:
@@ -63,40 +58,53 @@ spec:
       - name: MAVEN_IMAGE
         value: 'maven:3-openjdk-11'
       - name: GOALS
-        value: ['clean', 'package', '-DskipTests']
+        value: ['clean', 'package']
     workspaces:
       - name: source
         workspace: source
       - name: maven-settings
         workspace: scratch
-  
+
+  - name: extract-app-version
+    taskRef:
+      name: extract-version-pom
+    runAfter:
+      - test
+      - maven-build
+    params:
+      - name: working-dir
+        value: .
+    workspaces:
+      - name: source
+        workspace: source
+
+  # - name: add-commitid-to-version
+  #   taskRef:
+  #     name: add-commitid-to-version
+  #   params:
+  #     - name: app-version
+        # value: $(tasks.extract-app-version.results.app-version)
+  #   runAfter:
+  #     - extract-app-version
+  #   workspaces:
+  #     - name: source
+  #       workspace: source
+
   - name: build
     taskRef:
       name: buildah
       kind: ClusterTask
     runAfter: 
-      - test
-      - maven-build
+      - extract-app-version
     workspaces:
       - name: source
         workspace: source
     params:
       - name: DOCKERFILE
-        value: ./src/main/docker/Dockerfile.jvm
+        value: ./src/main/docker/Containerfile
       - name: IMAGE
-        value: $(params.image-url):$(params.image-tag)
+        value: $(params.image-url):$(tasks.extract-app-version.results.app-version)
       - name: CONTEXT
         value: .
       - name: TLSVERIFY
         value: 'false'
-
-  - name: deploy
-    taskRef:
-      name: openshift-client
-      kind: ClusterTask
-    runAfter:
-      - build
-    params:
-      - name: SCRIPT
-        value: |
-          oc rollout restart deployment/$(params.deployment-name)
