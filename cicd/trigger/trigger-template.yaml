@@ -32,12 +32,23 @@ spec:
         value: latest
       - name: deployment-name
         value: product-api
+      - name: repo-k8s-url
+        value: https://github.com/JuanmaBM/product-api-k8s
+      - name: repo-k8s-branch
+        value: main
+      - name: repo-k8s-deployment-path
+        value: base/deployment.yaml
+      - name: containerfile-path
+        value: ./src/main/docker/Containerfile
       pipelineRef:
         name: quarkus-ci
       resources: []
       status: null
       workspaces:
       - name: source
+        persistentVolumeClaim:
+          claimName: source-workspace
+      - name: source-k8s
         persistentVolumeClaim:
           claimName: source-workspace
       - emptyDir: {}

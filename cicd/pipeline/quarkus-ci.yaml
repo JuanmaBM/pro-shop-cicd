@@ -5,6 +5,7 @@ metadata:
 spec:
   workspaces:
     - name: source
+    - name: source-k8s
     - name: scratch
   params:
     - name: url
@@ -15,8 +16,15 @@ spec:
       description: Image name
     - name: image-url
       description: Container image URL to publish
+    - name: repo-k8s-url
+      description: Repotitory url which have Kubernetes/OCP descriptors
+    - name: repo-k8s-branch
+      description: Branch used in the k8s repository
+    - name: repo-k8s-deployment-path
+      description: Deployment path in k8s repository
+    - name: containerfile-path
   tasks:
-  - name: checkout
+  - name: clone
     taskRef:
       name: git-clone
       kind: ClusterTask
@@ -36,7 +44,7 @@ spec:
       name: maven
       kind: ClusterTask
     runAfter:
-      - checkout
+      - clone
     params:
       - name: MAVEN_IMAGE
         value: 'maven:3-openjdk-11'
@@ -53,7 +61,7 @@ spec:
       name: maven
       kind: ClusterTask
     runAfter:
-      - checkout
+      - clone
     params:
       - name: MAVEN_IMAGE
         value: 'maven:3-openjdk-11'
@@ -101,10 +109,46 @@ spec:
         workspace: source
     params:
       - name: DOCKERFILE
-        value: ./src/main/docker/Containerfile
+        value: $(params.containerfile-path)
       - name: IMAGE
         value: $(params.image-url):$(tasks.extract-app-version.results.app-version)
       - name: CONTEXT
         value: .
       - name: TLSVERIFY
         value: 'false'
+
+  - name: clone-k8s
+    taskRef:
+      name: git-clone
+      kind: ClusterTask
+    runAfter: 
+      - build
+    params:
+      - name: url
+        value: $(params.repo-k8s-url)
+      - name: revision
+        value: $(params.repo-k8s-branch)
+      - name: deleteExisting
+        value: 'true'
+    workspaces:
+      - name: output
+        workspace: source-k8s
+
+  - name: update-image
+    taskRef:
+      name: update-image-k8s
+      kind: Task
+    runAfter: 
+      - clone-k8s
+    params:
+      - name: deployment-path
+        value: $(params.repo-k8s-deployment-path)
+      - name: image-version
+        value: $(tasks.extract-app-version.results.app-version)
+      - name: image-name
+        value: $(params.image-name)
+      - name: revision
+        value: $(params.repo-k8s-branch)
+    workspaces:
+      - name: source
+        workspace: source-k8s

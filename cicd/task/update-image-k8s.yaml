@@ -1,0 +1,37 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: update-image-k8s
+spec:
+  params:
+    - name: deployment-path
+      description: The folder where is founded deployment file
+    - name: image-version
+      description: The new image version
+    - name: image-name
+    - name: revision
+      description: branch name
+  workspaces:
+    - name: source
+  steps:
+    - name: change-image-version
+      image: alpine/git:v2.26.2
+      script: |
+        cd $(workspaces.source.path)
+        sed -E -i "s/$(params.image-name):(..*)/$(params.image-name):$(params.image-version)/g" $(params.deployment-path)
+
+        echo "Set image version to $(params.image-name):$(params.image-version)"
+
+    - name: push-changes
+      image: alpine/git:v2.26.2
+      script: |
+        #!/bin/sh
+        cd $(workspaces.source.path)
+        git status
+        
+        git config --global user.email "tekton-minion@tekton.com"
+        git config --global user.name "tekton-minion"
+
+        git add base/deployment.yaml
+        git commit -m "[Tekton] Updates image version to $(params.image-name):$(params.image-version)"
+        git push origin HEAD:$(params.revision)
