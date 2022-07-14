@@ -2,5 +2,5 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - extract-version-pom.yaml
-  - echo-version.yaml
   - add-commitid-to-version.yaml
+  - update-image-k8s.yaml
