@@ -5,6 +5,10 @@ print_separator() {
 }
 
 print_separator
+echo -e "Create pro-shop project"
+oc new-project pro-shop
+
+print_separator
 print_separator
 echo -e "GitOps Installation"
 print_separator
@@ -33,10 +37,6 @@ sleep 15;
 print_separator
 echo -e "Generating sealed secret for quay credentials\n"
 kubeseal --scope cluster-wide -o yaml < cicd/workspace/quay-credentials-generic-secret.yaml  > cicd/workspace/quay-credentials-sealed-secret.yaml
-
-print_separator
-echo -e "Create pro-shop project"
-oc new-project pro-shop
 
 print_separator
 echo -e "Installing workshop cicd resources\n"
