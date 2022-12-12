@@ -5,3 +5,4 @@ resources:
   - tekton_cluster_roles.yaml
   - argocd-operator.yaml
   - sealed-secret-controller.yaml
+  - argocd-sealed-secret-cluster-role.yaml
